@@ -13,6 +13,9 @@ import {
   GET_ALL_CUSTOMERS_REQUEST,
   GET_ALL_CUSTOMERS_SUCCESS,
   GET_ALL_CUSTOMERS_FAILURE,
+  SET_COGNITO_USER, 
+  COGNITO_LOGIN_SUCCESS, 
+  COGNITO_LOGOUT 
 } from "./actionTypes";
 import api, { API_BASE_URL } from "../../config/api";
 
@@ -114,5 +117,30 @@ export const logout = () => {
   return async (dispatch) => {
     dispatch({ type: LOGOUT });
     localStorage.clear();
+  };
+};
+// Acción para establecer usuario de Cognito
+export const setCognitoUser = (userData, accessToken) => {
+  return (dispatch) => {
+    // Guardar token en localStorage para compatibilidad
+    localStorage.setItem("jwt", accessToken);
+    
+    // Dispatch a Redux
+    dispatch({
+      type: SET_COGNITO_USER,
+      payload: {
+        user: userData,
+        jwt: accessToken,
+        isCognitoUser: true
+      }
+    });
+  };
+};
+
+// Acción para logout de Cognito
+export const cognitoLogout = () => {
+  return (dispatch) => {
+    localStorage.removeItem("jwt");
+    dispatch({ type: COGNITO_LOGOUT });
   };
 };

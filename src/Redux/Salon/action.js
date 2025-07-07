@@ -118,3 +118,32 @@ export const searchSalon = ({jwt,city}) => async (dispatch) => {
     dispatch({ type: SEARCH_SALONS_FAILURE, payload: error.message });
   }
 };
+// Agregar a src/Redux/Salon/action.js
+// Reemplazar la función createSalonOnly en src/Redux/Salon/action.js
+
+export const createSalonOnly = (reqData) => async (dispatch) => {
+  dispatch({ type: CREATE_SALON_REQUEST });
+  try {
+    // El JWT viene de Cognito
+    const jwt = localStorage.getItem("jwt");
+    
+    console.log("Creating salon with data:", reqData.salonDetails);
+    console.log("Using JWT:", jwt);
+    
+    // ⭐ CORREGIR: usar API_BASE_URL en lugar de /auth/signup
+    const { data } = await api.post(API_BASE_URL, reqData.salonDetails, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+
+    console.log("salon created successfully", data);
+    dispatch({ type: CREATE_SALON_SUCCESS, payload: data });
+    
+    // Redirigir después del éxito
+    reqData.navigate("/salon-dashboard");
+
+  } catch (error) {
+    console.log("error creating salon", error);
+    console.log("error response:", error.response?.data);
+    dispatch({ type: CREATE_SALON_FAILURE, payload: error.message });
+  }
+};

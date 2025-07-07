@@ -10,6 +10,8 @@ import {
   GET_USER_FAILURE,
   LOGOUT,
   GET_ALL_CUSTOMERS_SUCCESS,
+  SET_COGNITO_USER,
+  COGNITO_LOGOUT,
 } from "./actionTypes";
 
 const initialState = {
@@ -57,6 +59,24 @@ const authReducer = (state = initialState, action) => {
     case LOGOUT:
       localStorage.removeItem("jwt");
       return { ...state, jwt: null, user: null };
+      
+case SET_COGNITO_USER:
+  return {
+    ...state,
+    isLoading: false,
+    user: action.payload.user,
+    jwt: action.payload.jwt,
+    isCognitoUser: action.payload.isCognitoUser,
+    error: null,
+  };
+
+case COGNITO_LOGOUT:
+  return {
+    ...state,
+    jwt: null,
+    user: null,
+    isCognitoUser: false,
+  };
     default:
       return state;
   }
