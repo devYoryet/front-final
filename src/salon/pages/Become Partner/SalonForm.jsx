@@ -32,7 +32,9 @@ const SalonForm = () => {
   const navigate = useNavigate();
   const cognitoAuth = useAuth();
   const { auth } = useSelector((store) => store);
-
+  const category = useSelector((store) => store.category);
+  const salon = useSelector((store) => store.salon);
+  const service = useSelector((store) => store.service);
   // Determinar el escenario del usuario al cargar
   useEffect(() => {
     analyzeUserScenario();
@@ -123,6 +125,13 @@ const SalonForm = () => {
     console.log("Usuario Cognito:", cognitoAuth.user?.profile);
     console.log("Usuario Redux:", auth.user);
     
+    // 🚀 VALIDACIÓN TEMPRANA DE CAMPOS REQUERIDOS
+    if (!values.salonDetails.name || !values.salonAddress.address || !values.salonAddress.city) {
+        console.error("❌ Faltan campos requeridos");
+        alert("Por favor completa todos los campos requeridos: Nombre del salón, Dirección y Ciudad");
+        return;
+    }
+    
     // 🚀 DEBUG MEJORADO DEL JWT
     const jwt = localStorage.getItem('jwt');
     if (jwt) {
@@ -165,12 +174,11 @@ const SalonForm = () => {
 
     console.log('📧 Email final a usar:', userEmail);
 
-    // Asegurar que el JWT esté en localStorage
+    // Verificar JWT
     const jwtToken = localStorage.getItem('jwt');
-    if (jwtToken) {
-        console.log("JWT encontrado, guardando en localStorage:", jwtToken.substring(0, 50) + "...");
-    } else {
+    if (!jwtToken) {
         console.error("❌ No hay JWT en localStorage");
+        alert("Error de autenticación. Por favor inicia sesión nuevamente.");
         return;
     }
 
@@ -188,23 +196,49 @@ const SalonForm = () => {
         dispatch(setCognitoUser(userData, jwtToken));
     }
 
-    // Preparar datos del salón con email correcto
+    // 🚀 PREPARAR DATOS DEL SALÓN CON MAPEO CORRECTO
     const salonDetails = {
-        name: values.salonDetails.name,
-        address: values.salonAddress.address,
-        city: values.salonAddress.city,
-        phone: values.salonAddress.phoneNumber,
-        email: userEmail, // Usar el email que encontramos
+        name: values.salonDetails.name.trim(),
+        address: values.salonAddress.address.trim(),
+        city: values.salonAddress.city.trim(),
+        phone: values.salonAddress.phoneNumber?.trim() || "", // 🔥 MAPEO CORRECTO
+        phoneNumber: values.salonAddress.phoneNumber?.trim() || "", // 🔥 DOBLE MAPEO PARA SEGURIDAD
+        email: userEmail.trim(),
         openTime: getLocalTime(values.salonDetails.openTime),
         closeTime: getLocalTime(values.salonDetails.closeTime),
-        images: values.salonDetails.images.length > 0 
+        images: values.salonDetails.images && values.salonDetails.images.length > 0 
             ? values.salonDetails.images 
             : ["https://images.pexels.com/photos/3998415/pexels-photo-3998415.jpeg?auto=compress&cs=tinysrgb&w=600"],
     };
 
-    console.log("Datos del salón preparados:", salonDetails);
-    console.log("JWT que se enviará:", jwtToken);
+    // 🚀 VALIDACIÓN FINAL DE DATOS
+    console.log("📋 Datos del salón preparados:");
+    console.log("   name:", `'${salonDetails.name}'`);
+    console.log("   address:", `'${salonDetails.address}'`);
+    console.log("   city:", `'${salonDetails.city}'`);
+    console.log("   phone:", `'${salonDetails.phone}'`);
+    console.log("   phoneNumber:", `'${salonDetails.phoneNumber}'`);
+    console.log("   email:", `'${salonDetails.email}'`);
+    console.log("   openTime:", `'${salonDetails.openTime}'`);
+    console.log("   closeTime:", `'${salonDetails.closeTime}'`);
+    console.log("   images count:", salonDetails.images.length);
 
+    // Verificación final
+    if (!salonDetails.name || !salonDetails.address || !salonDetails.city || !salonDetails.email) {
+        console.error("❌ Faltan campos después del procesamiento:", {
+            name: salonDetails.name,
+            address: salonDetails.address,
+            city: salonDetails.city,
+            email: salonDetails.email
+        });
+        alert("Error procesando datos del salón. Verifica que todos los campos estén completos.");
+        return;
+    }
+
+    console.log("🚀 Enviando datos al backend...");
+    console.log("JWT que se enviará:", jwtToken.substring(0, 50) + "...");
+
+    // Enviar al Redux
     dispatch(createSalonOnly({ salonDetails, navigate }));
 };
 
