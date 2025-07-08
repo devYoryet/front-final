@@ -117,57 +117,96 @@ const SalonForm = () => {
     redirectToCognito(values);
   };
 
-  const createSalonForExistingUser = (values) => {
+ const createSalonForExistingUser = (values) => {
     console.log("=== CREAR SALÓN PARA USUARIO EXISTENTE ===");
     console.log("Values recibidos:", values);
     console.log("Usuario Cognito:", cognitoAuth.user?.profile);
     console.log("Usuario Redux:", auth.user);
     
-    // ⭐ CRÍTICO: Obtener y guardar JWT
-    const jwtToken = cognitoAuth.user?.access_token;
-    if (!jwtToken) {
-      console.error("No hay JWT disponible en cognitoAuth.user.access_token");
-      alert("Error: No se encontró token de autenticación. Por favor, inicia sesión nuevamente.");
-      return;
+    // 🚀 DEBUG MEJORADO DEL JWT
+    const jwt = localStorage.getItem('jwt');
+    if (jwt) {
+        try {
+            const tokenParts = jwt.split('.');
+            const payload = JSON.parse(atob(tokenParts[1]));
+            console.log('🔍 JWT EN LOCALSTORAGE (DEBERÍA SER ID TOKEN):', payload);
+            console.log('   email en JWT:', payload.email);
+            console.log('   name en JWT:', payload.name);
+            console.log('   username en JWT:', payload.username);
+            console.log('   custom:role en JWT:', payload['custom:role']);
+            console.log('   token_use en JWT:', payload.token_use); // Debería ser "id"
+        } catch (e) {
+            console.error('Error decodificando JWT:', e);
+        }
     }
-    
-    console.log("JWT encontrado, guardando en localStorage:", jwtToken.substring(0, 50) + "...");
-    localStorage.setItem("jwt", jwtToken);
-    
-    // ⭐ Establecer usuario en Redux
-    const userData = {
-      id: cognitoAuth.user.profile.sub,
-      email: cognitoAuth.user.profile.email,
-      fullName: cognitoAuth.user.profile.name || cognitoAuth.user.profile.email,
-      role: 'SALON_OWNER',
-    };
-    
-    console.log("Estableciendo usuario en Redux:", userData);
-    dispatch(setCognitoUser(userData, jwtToken)); // ⭐ AHORA FUNCIONA
-    
+
+    // 🚀 OBTENER EMAIL DE MÚLTIPLES FUENTES
+    let userEmail = values.salonAddress.email;
+    if (!userEmail || userEmail === '') {
+        // Intentar obtener de Cognito profile
+        userEmail = cognitoAuth.user?.profile?.email;
+        if (!userEmail) {
+            // Intentar obtener del JWT (ID token)
+            try {
+                const jwt = localStorage.getItem('jwt');
+                const payload = JSON.parse(atob(jwt.split('.')[1]));
+                userEmail = payload.email;
+            } catch (e) {
+                console.error('Error obteniendo email del JWT:', e);
+            }
+        }
+        if (!userEmail) {
+            // Usar email por defecto basado en usuario ID
+            const userId = cognitoAuth.user?.profile?.sub || auth.user?.id;
+            userEmail = `${userId.substring(0, 8)}@cognito.temp`;
+            console.log('⚠️ Email no encontrado, usando temporal:', userEmail);
+        }
+    }
+
+    console.log('📧 Email final a usar:', userEmail);
+
+    // Asegurar que el JWT esté en localStorage
+    const jwtToken = localStorage.getItem('jwt');
+    if (jwtToken) {
+        console.log("JWT encontrado, guardando en localStorage:", jwtToken.substring(0, 50) + "...");
+    } else {
+        console.error("❌ No hay JWT en localStorage");
+        return;
+    }
+
+    // 🚀 ACTUALIZAR USUARIO EN REDUX CON EMAIL CORRECTO
+    const currentUser = cognitoAuth.user?.profile || auth.user;
+    if (currentUser && cognitoAuth.isAuthenticated) {
+        const userData = {
+            id: currentUser.sub || currentUser.id,
+            email: userEmail, // Usar el email que encontramos
+            fullName: currentUser.name || userEmail.split('@')[0],
+            role: 'SALON_OWNER'
+        };
+
+        console.log("Estableciendo usuario en Redux:", userData);
+        dispatch(setCognitoUser(userData, jwtToken));
+    }
+
+    // Preparar datos del salón con email correcto
     const salonDetails = {
-      name: values.salonDetails.name,
-      address: values.salonAddress.address,
-      city: values.salonAddress.city,
-      phone: values.salonAddress.phoneNumber,
-      email: values.salonAddress.email,
-      openTime: getLocalTime(values.salonDetails.openTime),
-      closeTime: getLocalTime(values.salonDetails.closeTime),
-      images: values.salonDetails.images.length > 0 ? values.salonDetails.images : [
-        "https://images.pexels.com/photos/3998415/pexels-photo-3998415.jpeg?auto=compress&cs=tinysrgb&w=600"
-      ],
+        name: values.salonDetails.name,
+        address: values.salonAddress.address,
+        city: values.salonAddress.city,
+        phone: values.salonAddress.phoneNumber,
+        email: userEmail, // Usar el email que encontramos
+        openTime: getLocalTime(values.salonDetails.openTime),
+        closeTime: getLocalTime(values.salonDetails.closeTime),
+        images: values.salonDetails.images.length > 0 
+            ? values.salonDetails.images 
+            : ["https://images.pexels.com/photos/3998415/pexels-photo-3998415.jpeg?auto=compress&cs=tinysrgb&w=600"],
     };
 
     console.log("Datos del salón preparados:", salonDetails);
     console.log("JWT que se enviará:", jwtToken);
 
-    // ⭐ Pasar JWT directamente en reqData
-    dispatch(createSalonOnly({ 
-      salonDetails, 
-      navigate, 
-      jwt: jwtToken
-    }));
-  };
+    dispatch(createSalonOnly({ salonDetails, navigate }));
+};
 
   const createAdditionalSalon = (values) => {
     console.log("Crear salón adicional para salon owner existente");
