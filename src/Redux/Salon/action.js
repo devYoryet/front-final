@@ -121,29 +121,57 @@ export const searchSalon = ({jwt,city}) => async (dispatch) => {
 // Agregar a src/Redux/Salon/action.js
 // Reemplazar la función createSalonOnly en src/Redux/Salon/action.js
 
-export const createSalonOnly = (reqData) => async (dispatch) => {
+// Actualizar createSalonOnly en src/Redux/Salon/action.js
+export const createSalonOnly = (reqData) => async (dispatch, getState) => {
   dispatch({ type: CREATE_SALON_REQUEST });
+  
   try {
-    // El JWT viene de Cognito
-    const jwt = localStorage.getItem("jwt");
+    // ⭐ Intentar obtener JWT de múltiples fuentes
+    const state = getState();
+    let jwt = localStorage.getItem("jwt") || 
+              state.auth?.jwt || 
+              reqData.jwt; // Permitir pasar JWT directamente
     
-    console.log("Creating salon with data:", reqData.salonDetails);
-    console.log("Using JWT:", jwt);
+    console.log("=== CREATE SALON ONLY ===");
+    console.log("Datos recibidos:", reqData.salonDetails);
+    console.log("JWT desde localStorage:", localStorage.getItem("jwt") ? "SÍ" : "NO");
+    console.log("JWT desde Redux:", state.auth?.jwt ? "SÍ" : "NO");
+    console.log("JWT desde reqData:", reqData.jwt ? "SÍ" : "NO");
+    console.log("JWT final seleccionado:", jwt ? "SÍ" : "NO");
     
-    // ⭐ CORREGIR: usar API_BASE_URL en lugar de /auth/signup
+    if (!jwt) {
+      throw new Error("No JWT token available from any source");
+    }
+    
+    // Verificar estructura de datos
+    const requiredFields = ['name', 'address', 'city', 'email'];
+    const missingFields = requiredFields.filter(field => !reqData.salonDetails[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+    
+    console.log("Enviando POST a:", `${API_BASE_URL}`);
+    console.log("Headers:", { Authorization: `Bearer ${jwt.substring(0, 50)}...` });
+    console.log("Body:", reqData.salonDetails);
+    
     const { data } = await api.post(API_BASE_URL, reqData.salonDetails, {
       headers: { Authorization: `Bearer ${jwt}` },
     });
 
-    console.log("salon created successfully", data);
+    console.log("Salón creado exitosamente:", data);
     dispatch({ type: CREATE_SALON_SUCCESS, payload: data });
     
     // Redirigir después del éxito
     reqData.navigate("/salon-dashboard");
 
   } catch (error) {
-    console.log("error creating salon", error);
-    console.log("error response:", error.response?.data);
+    console.log("=== ERROR CREANDO SALÓN ===");
+    console.log("Error completo:", error);
+    console.log("Error response:", error.response?.data);
+    console.log("Error status:", error.response?.status);
+    console.log("Error message:", error.message);
+    
     dispatch({ type: CREATE_SALON_FAILURE, payload: error.message });
   }
 };

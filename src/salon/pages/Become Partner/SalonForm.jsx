@@ -1,4 +1,4 @@
-// src/salon/pages/Become Partner/SalonForm.jsx - Flujo inteligente
+// src/salon/pages/Become Partner/SalonForm.jsx - Versión corregida
 import {
   Button,
   CircularProgress,
@@ -20,6 +20,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 import { createSalonOnly } from "../../../Redux/Salon/action";
+import { setCognitoUser } from "../../../Redux/Auth/action"; // ⭐ IMPORT AGREGADO
 
 const steps = ["Owner Details", "Salon Details", "Salon Address"];
 
@@ -39,7 +40,6 @@ const SalonForm = () => {
 
   const analyzeUserScenario = () => {
     if (cognitoAuth.isAuthenticated || auth.user) {
-      // Usuario ya logueado
       const currentUser = cognitoAuth.user?.profile || auth.user;
       const userRole = currentUser?.['custom:role'] || currentUser?.role || 'CUSTOMER';
       
@@ -51,7 +51,6 @@ const SalonForm = () => {
         setShowDialog(true);
       }
     } else {
-      // Usuario nuevo
       setUserScenario('NEW_USER');
     }
   };
@@ -89,15 +88,12 @@ const SalonForm = () => {
   const handleFormSubmission = (values) => {
     switch (userScenario) {
       case 'NEW_USER':
-        // Crear usuario en Cognito + salón
         createUserAndSalon(values);
         break;
       case 'EXISTING_CUSTOMER':
-        // Solo crear salón (usuario ya existe)
         createSalonForExistingUser(values);
         break;
       case 'EXISTING_SALON_OWNER':
-        // Crear segundo salón o redirigir a dashboard
         createAdditionalSalon(values);
         break;
       default:
@@ -108,7 +104,6 @@ const SalonForm = () => {
   const createUserAndSalon = (values) => {
     console.log("Crear usuario nuevo + salón");
     
-    // Guardar datos del salón temporalmente
     const salonData = {
       salonDetails: {
         ...values.salonDetails,
@@ -119,13 +114,36 @@ const SalonForm = () => {
     };
     
     localStorage.setItem('pendingSalonData', JSON.stringify(salonData));
-    
-    // Redirigir a Cognito
     redirectToCognito(values);
   };
 
   const createSalonForExistingUser = (values) => {
-    console.log("Crear salón para usuario existente");
+    console.log("=== CREAR SALÓN PARA USUARIO EXISTENTE ===");
+    console.log("Values recibidos:", values);
+    console.log("Usuario Cognito:", cognitoAuth.user?.profile);
+    console.log("Usuario Redux:", auth.user);
+    
+    // ⭐ CRÍTICO: Obtener y guardar JWT
+    const jwtToken = cognitoAuth.user?.access_token;
+    if (!jwtToken) {
+      console.error("No hay JWT disponible en cognitoAuth.user.access_token");
+      alert("Error: No se encontró token de autenticación. Por favor, inicia sesión nuevamente.");
+      return;
+    }
+    
+    console.log("JWT encontrado, guardando en localStorage:", jwtToken.substring(0, 50) + "...");
+    localStorage.setItem("jwt", jwtToken);
+    
+    // ⭐ Establecer usuario en Redux
+    const userData = {
+      id: cognitoAuth.user.profile.sub,
+      email: cognitoAuth.user.profile.email,
+      fullName: cognitoAuth.user.profile.name || cognitoAuth.user.profile.email,
+      role: 'SALON_OWNER',
+    };
+    
+    console.log("Estableciendo usuario en Redux:", userData);
+    dispatch(setCognitoUser(userData, jwtToken)); // ⭐ AHORA FUNCIONA
     
     const salonDetails = {
       name: values.salonDetails.name,
@@ -140,12 +158,19 @@ const SalonForm = () => {
       ],
     };
 
-    dispatch(createSalonOnly({ salonDetails, navigate }));
+    console.log("Datos del salón preparados:", salonDetails);
+    console.log("JWT que se enviará:", jwtToken);
+
+    // ⭐ Pasar JWT directamente en reqData
+    dispatch(createSalonOnly({ 
+      salonDetails, 
+      navigate, 
+      jwt: jwtToken
+    }));
   };
 
   const createAdditionalSalon = (values) => {
     console.log("Crear salón adicional para salon owner existente");
-    // Misma lógica que createSalonForExistingUser
     createSalonForExistingUser(values);
   };
 
@@ -156,7 +181,6 @@ const SalonForm = () => {
       returnTo: 'create-salon'
     }));
     
-    // Usar signinRedirect del contexto de auth
     cognitoAuth.signinRedirect({
       extraQueryParams: {
         state: state
@@ -166,7 +190,7 @@ const SalonForm = () => {
 
   const getLocalTime = (time) => {
     if (!time) return "09:00:00";
-    if (typeof time === 'string') return time + ":00";
+    if (typeof time === 'string') return time.includes(':') ? time + ":00" : time;
     
     let hour = time.$H || 9;
     let minute = time.$m || 0;
@@ -180,9 +204,8 @@ const SalonForm = () => {
     
     switch (action) {
       case 'CONTINUE_SALON_CREATION':
-        // Continuar con la creación del salón
         if (userScenario === 'EXISTING_CUSTOMER' || userScenario === 'EXISTING_SALON_OWNER') {
-          setActiveStep(1); // Saltar paso de datos de usuario
+          setActiveStep(1);
         }
         break;
       case 'GO_TO_DASHBOARD':
@@ -251,7 +274,6 @@ const SalonForm = () => {
 
   return (
     <div className="w-full">
-      {/* Mostrar alert según el escenario */}
       {userScenario === 'EXISTING_CUSTOMER' && (
         <Alert severity="info" className="mb-4">
           Como ya tienes una cuenta, solo necesitas completar los datos de tu salón.
@@ -266,7 +288,6 @@ const SalonForm = () => {
 
       <Stepper activeStep={activeStep} alternativeLabel>
         {steps.map((label, index) => {
-          // Marcar como completado si el usuario ya existe
           const isCompleted = (userScenario !== 'NEW_USER' && index === 0);
           return (
             <Step key={label} completed={isCompleted}>
@@ -312,7 +333,6 @@ const SalonForm = () => {
         </div>
       </div>
 
-      {/* Dialog para manejar diferentes escenarios */}
       {renderUserScenarioDialog()}
     </div>
   );

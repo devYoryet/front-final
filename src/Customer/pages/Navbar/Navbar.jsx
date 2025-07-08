@@ -1,4 +1,4 @@
-// src/Customer/pages/Navbar/Navbar.jsx - Con debug
+// src/Customer/pages/Navbar/Navbar.jsx - Corregido
 import {
   Avatar,
   Badge,
@@ -27,15 +27,6 @@ const Navbar = () => {
 
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
-  
-  // Debug: Ver el estado de autenticación
-  console.log('Navbar - Auth states:', {
-    cognitoAuthenticated: cognitoAuth.isAuthenticated,
-    cognitoLoading: cognitoAuth.isLoading,
-    cognitoUser: cognitoAuth.user?.profile,
-    reduxUser: auth.user,
-    reduxJwt: auth.jwt
-  });
   
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -67,11 +58,22 @@ const Navbar = () => {
         id: cognitoAuth.user.profile.sub,
         email: cognitoAuth.user.profile.email,
         fullName: cognitoAuth.user.profile.name || cognitoAuth.user.profile.email,
-        role: cognitoAuth.user.profile['custom:role'] || 'CUSTOMER'
+        role: cognitoAuth.user.profile['custom:customrole'] || 'CUSTOMER'
       }
     : auth.user;
 
   const isAuthenticated = cognitoAuth.isAuthenticated || !!auth.user;
+
+  // ⭐ Determinar si mostrar "Become Partner"
+  const shouldShowBecomePartner = () => {
+    if (!isAuthenticated) {
+      return true; // Mostrar para usuarios no autenticados
+    }
+    
+    // Para usuarios autenticados, solo mostrar si NO son SALON_OWNER
+    const userRole = currentUser?.role;
+    return userRole !== 'SALON_OWNER' && userRole !== 'ROLE_SALON_OWNER';
+  };
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -118,13 +120,16 @@ const Navbar = () => {
       </div>
       
       <div className="flex items-center gap-3 md:gap-6">
-        <Button 
-          onClick={() => navigate("/become-partner")} 
-          variant="outlined"
-          size="small"
-        >
-          Become Partner
-        </Button>
+        {/* ⭐ Mostrar "Become Partner" condicionalmente */}
+        {shouldShowBecomePartner() && (
+          <Button 
+            onClick={() => navigate("/become-partner")} 
+            variant="outlined"
+            size="small"
+          >
+            Become Partner
+          </Button>
+        )}
 
         {isAuthenticated && (
           <IconButton onClick={() => navigate("/notifications")}>
@@ -167,6 +172,12 @@ const Navbar = () => {
               {(currentUser?.role === "SALON_OWNER" || currentUser?.role === "ROLE_SALON_OWNER") && (
                 <MenuItem onClick={handleMenuClick("/salon-dashboard")}>
                   Dashboard
+                </MenuItem>
+              )}
+              {/* ⭐ Opción para crear salón adicional si ya es SALON_OWNER */}
+              {(currentUser?.role === "SALON_OWNER" || currentUser?.role === "ROLE_SALON_OWNER") && (
+                <MenuItem onClick={handleMenuClick("/become-partner")}>
+                  Create Another Salon
                 </MenuItem>
               )}
               <MenuItem onClick={handleMenuClick("/logout")}>Logout</MenuItem>

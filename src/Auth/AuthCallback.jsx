@@ -1,107 +1,124 @@
-// src/Auth/AuthCallback.jsx - Corregido
+// src/Auth/AuthCallback.jsx - Versión simplificada que funciona
 import React, { useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
-import { useNavigate, useLocation } from 'react-router-dom'; // ⭐ Agregar useLocation
+import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { CircularProgress } from '@mui/material';
 import { setCognitoUser } from '../Redux/Auth/action';
-import { createSalonOnly } from '../Redux/Salon/action'; // ⭐ Agregar import
+import { createSalonOnly } from '../Redux/Salon/action';
 
 const AuthCallback = () => {
   const auth = useAuth();
   const navigate = useNavigate();
-  const location = useLocation(); // ⭐ Hook correcto de React Router
   const dispatch = useDispatch();
-  const pendingSalonData = localStorage.getItem('pendingSalonData');
-  useEffect(() => {
-    const handleCallback = async () => {
-      if (auth.isAuthenticated && auth.user) {
-        console.log('Usuario autenticado:', auth.user);
-        console.log('Access token:', auth.user.access_token);
+
+ useEffect(() => {
+  const handleCallback = async () => {
+    if (auth.isAuthenticated && auth.user) {
+      console.log('=== AUTH CALLBACK ===');
+      console.log('Usuario autenticado:', auth.user);
+      console.log('Access token disponible:', auth.user.access_token ? 'SÍ' : 'NO');
+      
+      // ⭐ CRÍTICO: Guardar JWT inmediatamente
+      if (auth.user.access_token) {
+        localStorage.setItem("jwt", auth.user.access_token);
+        console.log('JWT guardado en localStorage');
+      }
+      
+      try {
+        const email = auth.user.profile.email;
+        const fullName = auth.user.profile.name || auth.user.profile.email;
+        const userSub = auth.user.profile.sub;
         
-        // Obtener el rol del state si viene del become-partner
-        let userRole = 'CUSTOMER';
-        try {
-          const urlParams = new URLSearchParams(location.search);
-          const state = urlParams.get('state');
-          if (state) {
-            const stateData = JSON.parse(decodeURIComponent(state));
-            userRole = stateData.role || 'CUSTOMER';
-          }
-        } catch (e) {
-          console.log('No state data found, using default role');
-        }
-        if (pendingSalonData && userRole === 'SALON_OWNER') {
-          // Hay datos del salón pendientes, crear el salón
+        // Extraer rol
+        let userRole = auth.user.profile['custom:customrole'] || 'CUSTOMER';
+        console.log('User role from Cognito:', userRole);
+        
+        // Verificar datos de salón pendientes
+        const pendingSalonData = localStorage.getItem('pendingSalonData');
+        
+        if (pendingSalonData) {
+          console.log('Hay datos de salón pendientes');
+          userRole = 'SALON_OWNER';
+          
           const salonData = JSON.parse(pendingSalonData);
           localStorage.removeItem('pendingSalonData');
           
-          // Crear el salón con los datos guardados
+          // ⭐ Establecer usuario en Redux ANTES de crear salón
+          const userData = {
+            id: userSub,
+            email: email,
+            fullName: fullName,
+            role: userRole,
+          };
+          
+          dispatch(setCognitoUser(userData, auth.user.access_token));
+          
           const salonDetails = {
-            ...salonData.salonDetails,
-            ...salonData.salonAddress,
+            name: salonData.salonDetails.name,
+            address: salonData.salonAddress.address,
+            city: salonData.salonAddress.city,
+            phone: salonData.salonAddress.phoneNumber,
+            email: salonData.salonAddress.email,
+            openTime: getLocalTime(salonData.salonDetails.openTime),
+            closeTime: getLocalTime(salonData.salonDetails.closeTime),
             images: salonData.salonDetails.images.length > 0 ? salonData.salonDetails.images : [
               "https://images.pexels.com/photos/3998415/pexels-photo-3998415.jpeg?auto=compress&cs=tinysrgb&w=600"
             ],
           };
           
-          console.log('Creando salón con datos guardados:', salonDetails);
-          dispatch(createSalonOnly({ salonDetails, navigate }));
-          return; // No redirigir aún, esperar a que se cree el salón
+          console.log('Creando salón con datos:', salonDetails);
+          
+          // ⭐ Pasar JWT directamente
+          dispatch(createSalonOnly({ 
+            salonDetails, 
+            navigate,
+            jwt: auth.user.access_token
+          }));
+          return;
         }
         
-        // Redirigir según el rol
-        if (userRole === 'SALON_OWNER' || userRole === 'ROLE_SALON_OWNER') {
-          // Si es salon owner pero no hay datos pendientes, ir a dashboard
-          navigate('/salon-dashboard');
-        } else if (userRole === 'ADMIN' || userRole === 'ROLE_ADMIN') {
-          navigate('/admin');
-        } else {
-          navigate('/');
-        }
-        // También verificar si tiene rol personalizado en Cognito
-        const cognitoRole = auth.user.profile['custom:role'];
-        if (cognitoRole) {
-          userRole = cognitoRole;
-        }
-
-        // Convertir usuario de Cognito a formato de tu app
+        // Flujo normal
         const userData = {
-          id: auth.user.profile.sub,
-          email: auth.user.profile.email || 'sin-email@example.com',
-          fullName: auth.user.profile.name || auth.user.profile.email || 'Usuario',
+          id: userSub,
+          email: email,
+          fullName: fullName,
           role: userRole,
         };
 
-        console.log('userData convertido:', userData);
-        console.log('Guardando JWT en localStorage:', auth.user.access_token);
-
-        // ⭐ IMPORTANTE: Guardar el JWT de Cognito
-        localStorage.setItem("jwt", auth.user.access_token);
-
-        // Guardar en Redux
         dispatch(setCognitoUser(userData, auth.user.access_token));
         
-        // Redirigir según el rol
-        if (userRole === 'SALON_OWNER' || userRole === 'ROLE_SALON_OWNER') {
-          console.log('Redirigiendo a complete-salon-profile');
-          navigate('/complete-salon-profile');
-        } else if (userRole === 'ADMIN' || userRole === 'ROLE_ADMIN') {
+        // Redirigir según rol
+        if (userRole === 'SALON_OWNER') {
+          navigate('/salon-dashboard');
+        } else if (userRole === 'ADMIN') {
           navigate('/admin');
         } else {
-          console.log('Redirigiendo a home');
           navigate('/');
         }
-      } else if (auth.error) {
-        console.error('Authentication error:', auth.error);
-        navigate('/login?error=auth_failed');
+        
+      } catch (error) {
+        console.error('Error en AuthCallback:', error);
+        navigate('/login?error=callback_failed');
       }
-    };
+    }
+  };
 
-    // Dar tiempo para que se complete la autenticación
-    const timer = setTimeout(handleCallback, 1000);
-    return () => clearTimeout(timer);
-  }, [auth.isAuthenticated, auth.error, auth.user, navigate, dispatch, location]);
+  const timer = setTimeout(handleCallback, 1000);
+  return () => clearTimeout(timer);
+}, [auth.isAuthenticated, auth.error, auth.user, navigate, dispatch]);
+
+  // Función auxiliar para formatear tiempo
+  const getLocalTime = (time) => {
+    if (!time) return "09:00:00";
+    if (typeof time === 'string') return time.includes(':') ? time + ":00" : time;
+    
+    let hour = time.$H || 9;
+    let minute = time.$m || 0;
+    let second = time.$s || 0;
+
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
+  };
 
   if (auth.error) {
     return (
