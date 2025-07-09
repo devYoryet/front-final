@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getCategoriesBySalon } from "../../../Redux/Category/action";
 import CategoryTable from "./CategoryTable";
 import { Button } from "@mui/material";
+import { fetchCategoriesBySalonOwner } from "../../../Redux/Category/action";
 
 const Category = () => {
   const [activeTab, setActiveTab] = useState(1);
@@ -11,15 +12,8 @@ const Category = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (salon.salon) {
-      dispatch(
-        getCategoriesBySalon({
-          salonId: salon.salon.id,
-          jwt: localStorage.getItem("jwt"),
-        })
-      );
-    }
-  }, [salon.salon]);
+  dispatch(fetchCategoriesBySalonOwner(localStorage.getItem("jwt")));
+}, []);
 
 
   console.log("salon ",salon)
