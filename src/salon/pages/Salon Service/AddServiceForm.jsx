@@ -23,6 +23,7 @@ import { uploadToCloudinary } from "../../../util/uploadToCloudnary";
 import { useDispatch, useSelector } from "react-redux";
 import { getCategoriesBySalon } from "../../../Redux/Category/action";
 import { createServiceAction } from "../../../Redux/Salon Services/action";
+import { fetchCategoriesBySalonOwner } from "../../../Redux/Category/action";
 
 
 
@@ -72,15 +73,12 @@ const ServiceForm = () => {
   };
 
   useEffect(() => {
-    if (salon.salon) {
-      dispatch(
-        getCategoriesBySalon({
-          salonId: salon.salon.id,
-          jwt: localStorage.getItem("jwt"),
-        })
-      );
-    }
-  }, [salon.salon]);
+  const jwt = localStorage.getItem("jwt");
+  if (jwt) {
+    dispatch(fetchCategoriesBySalonOwner(jwt));
+  }
+}, [dispatch]);
+
 
   return (
     <div className="flex justify-center items-center">
@@ -200,18 +198,22 @@ const ServiceForm = () => {
           <Grid2 size={12}>
             <FormControl fullWidth>
               <InputLabel id="demo-simple-select-label">Category</InputLabel>
-              <Select
-                labelId="demo-simple-select-label"
-                id="demo-simple-select"
-                value={formik.category}
-                label="Category"
+             <Select
+                labelId="category-label"
+                id="category"
                 name="category"
+                value={formik.values.category}
+                label="Category"
                 onChange={formik.handleChange}
+                required
               >
-              {category.categories.map((item)=> <MenuItem value={item.id}>{item.name}</MenuItem>)
-               }
-               
+                {category.categories.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {item.name}
+                  </MenuItem>
+                ))}
               </Select>
+
             </FormControl>
           </Grid2>
 
