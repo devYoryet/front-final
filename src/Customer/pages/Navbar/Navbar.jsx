@@ -91,10 +91,10 @@ const Navbar = () => {
     return (
       <div className="z-50 px-6 flex items-center justify-between py-2 fixed top-0 left-0 right-0 bg-white">
         <div className="flex items-center gap-10">
-          <h1 className="cursor-pointer font-bold lg:text-2xl">Salon Service</h1>
+          <span className="text-primary-color">Urban</span>Glow
         </div>
         <div className="flex items-center gap-3 md:gap-6">
-          <div className="animate-pulse">Loading...</div>
+          <div className="animate-pulse">Cargando...</div>
         </div>
       </div>
     );
@@ -105,16 +105,16 @@ const Navbar = () => {
       <div className="flex items-center gap-10">
         <h1
           onClick={() => navigate("/")}
-          className="cursor-pointer font-bold lg:text-2xl text-green-600"
+           className="cursor-pointer font-extrabold text-2xl tracking-tight text-gray-800"
         >
-          Salon Service
+          <span className="text-primary-color">Urban</span>Glow
         </h1>
         <div className="lg:flex items-center gap-5 hidden">
           <h1 
             className="cursor-pointer hover:text-primary-color transition-colors" 
             onClick={() => navigate("/")}
           >
-            Home
+            Inicio
           </h1>
         </div>
       </div>
@@ -127,7 +127,7 @@ const Navbar = () => {
             variant="outlined"
             size="small"
           >
-            Become Partner
+          Hazte Socio
           </Button>
         )}
 
@@ -167,7 +167,7 @@ const Navbar = () => {
               }}
             >
               <MenuItem onClick={handleMenuClick("/bookings")}>
-                My Bookings
+                Mis reservas
               </MenuItem>
               {(currentUser?.role === "SALON_OWNER" || currentUser?.role === "ROLE_SALON_OWNER") && (
                 <MenuItem onClick={handleMenuClick("/salon-dashboard")}>
@@ -177,7 +177,7 @@ const Navbar = () => {
               {/* ⭐ Opción para crear salón adicional si ya es SALON_OWNER */}
               {(currentUser?.role === "SALON_OWNER" || currentUser?.role === "ROLE_SALON_OWNER") && (
                 <MenuItem onClick={handleMenuClick("/become-partner")}>
-                  Create Another Salon
+                Crear un salon
                 </MenuItem>
               )}
               <MenuItem onClick={handleMenuClick("/logout")}>Logout</MenuItem>
@@ -191,7 +191,7 @@ const Navbar = () => {
             size="small"
             startIcon={<AccountCircleIcon />}
           >
-            Sign In
+            Login
           </Button>
         )}
       </div>
