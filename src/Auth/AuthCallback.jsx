@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { CircularProgress } from '@mui/material';
 import { setCognitoUser } from '../Redux/Auth/action';
 import { createSalonOnly } from '../Redux/Salon/action';
+import api from '../config/api'; // Import correcto - default export
 
 const AuthCallback = () => {
   const auth = useAuth();
@@ -65,7 +66,8 @@ const AuthCallback = () => {
           const salonDetails = {
             ...salonData.salonDetails,
             ...salonData.salonAddress,
-            images: salonData.salonDetails.images.length > 0 ? salonData.salonDetails.images : [
+            images: salonData.salonDetails.images.length > 0 ?
+              salonData.salonDetails.images : [
               "https://images.pexels.com/photos/3998415/pexels-photo-3998415.jpeg?auto=compress&cs=tinysrgb&w=600"
             ],
           };
@@ -75,36 +77,83 @@ const AuthCallback = () => {
           return;
         }
         
-        // También verificar si tiene rol personalizado en Cognito
-        const cognitoRole = idTokenPayload['custom:role'] || userRole;
-
         // 🚀 IMPORTANTE: GUARDAR ID TOKEN EN LUGAR DE ACCESS TOKEN
         console.log('🔑 Guardando ID TOKEN en localStorage');
         localStorage.setItem("jwt", auth.user.id_token);
 
-        // Convertir usuario de Cognito a formato de tu app
-        const userData = {
-          id: auth.user.profile.sub,
-          email: email,
-          fullName: name || email,
-          role: cognitoRole,
-        };
+        // ⭐ NUEVA LÓGICA: LLAMAR AL BACKEND PARA OBTENER EL ROL REAL
+        try {
+          console.log('🔄 Llamando al backend para obtener el perfil real del usuario...');
+          
+          const response = await api.get('/api/users/profile', {
+            headers: {
+              'Authorization': `Bearer ${auth.user.id_token}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
-        console.log('userData convertido:', userData);
+          const backendUserData = response.data;
+          console.log('✅ Datos del usuario desde el backend:', backendUserData);
 
-        // Guardar en Redux
-        dispatch(setCognitoUser(userData, auth.user.id_token));
-        
-        // Redirigir según el rol
-        if (userRole === 'SALON_OWNER' || userRole === 'ROLE_SALON_OWNER') {
-          console.log('Redirigiendo a complete-salon-profile');
-          navigate('/complete-salon-profile');
-        } else if (userRole === 'ADMIN' || userRole === 'ROLE_ADMIN') {
-          navigate('/admin');
-        } else {
-          console.log('Redirigiendo a home');
-          navigate('/');
+          // ⭐ USAR DATOS DEL BACKEND (rol real)
+          const userData = {
+            id: backendUserData.id || auth.user.profile.sub,
+            email: backendUserData.email || email,
+            fullName: backendUserData.fullName || name || email,
+            role: backendUserData.role // ⭐ ROL REAL DEL BACKEND
+          };
+
+          console.log('📋 userData final con rol del backend:', userData);
+
+          // Guardar en Redux con el rol correcto del backend
+          dispatch(setCognitoUser(userData, auth.user.id_token));
+          
+          // ⭐ REDIRECCIÓN BASADA EN EL ROL REAL DEL BACKEND
+          console.log('🚀 Redirigiendo según rol del backend:', backendUserData.role);
+          
+          if (backendUserData.role === 'SALON_OWNER' || backendUserData.role === 'ROLE_SALON_OWNER') {
+            console.log('Redirigiendo a salon-dashboard');
+            navigate('/salon-dashboard');
+          } else if (backendUserData.role === 'ADMIN' || backendUserData.role === 'ROLE_ADMIN') {
+            console.log('Redirigiendo a admin');
+            navigate('/admin');
+          } else {
+            console.log('Redirigiendo a home');
+            navigate('/');
+          }
+
+        } catch (backendError) {
+          console.error('❌ Error llamando al backend:', backendError);
+          console.log('🔄 Fallback: usando datos del frontend...');
+          
+          // ⚠️ FALLBACK: Si el backend falla, usar lógica anterior
+          // Pero con el rol del state si está disponible
+          const cognitoRole = idTokenPayload['custom:role'] || userRole;
+
+          const userData = {
+            id: auth.user.profile.sub,
+            email: email,
+            fullName: name || email,
+            role: cognitoRole,
+          };
+
+          console.log('📋 userData fallback:', userData);
+
+          // Guardar en Redux
+          dispatch(setCognitoUser(userData, auth.user.id_token));
+          
+          // Redirigir según el rol del fallback
+          if (userRole === 'SALON_OWNER' || userRole === 'ROLE_SALON_OWNER') {
+            console.log('Redirigiendo a complete-salon-profile');
+            navigate('/complete-salon-profile');
+          } else if (userRole === 'ADMIN' || userRole === 'ROLE_ADMIN') {
+            navigate('/admin');
+          } else {
+            console.log('Redirigiendo a home');
+            navigate('/');
+          }
         }
+
       } else if (auth.error) {
         console.error('Authentication error:', auth.error);
         navigate('/login?error=auth_failed');

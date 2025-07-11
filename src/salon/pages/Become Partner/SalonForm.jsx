@@ -47,59 +47,67 @@ const SalonForm = () => {
   /**
    * 🔍 VERIFICAR ROL REAL DESDE LA BD
    */
-  const checkUserRole = async () => {
-    try {
-      setLoading(true);
+ const checkUserRole = async () => {
+  try {
+    setLoading(true);
 
-      // Si no está autenticado, es nuevo usuario
-      if (!cognitoAuth.isAuthenticated && !auth.user) {
-        console.log('👤 Usuario no autenticado - nuevo usuario');
-        setUserRole('NEW_USER');
-        setLoading(false);
-        return;
+    // Usar rol de Redux si está disponible
+    if (auth.user?.role) {
+      console.log('✅ Usando rol de Redux:', auth.user.role);
+      const role = auth.user.role;
+      setUserRole(role);
+
+      if (role === 'SALON_OWNER') {
+        setShowDialog(true);
+      } else if (role === 'CUSTOMER') {
+        setActiveStep(1);
       }
-
-      // 🚀 LLAMAR AL BACKEND PARA OBTENER ROL REAL
-      const token = localStorage.getItem('jwt');
-      if (!token) {
-        setUserRole('NEW_USER');
-        setLoading(false);
-        return;
-      }
-
-      console.log('🔄 Verificando rol del usuario en BD...');
-      
-      const response = await fetch('/api/users/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        console.log('✅ Datos del usuario obtenidos:', userData);
-        
-        const role = userData.role;
-        setUserRole(role);
-
-        // 🚀 MOSTRAR DIALOG SEGÚN EL ROL
-        if (role === 'SALON_OWNER' || role === 'ROLE_SALON_OWNER') {
-          setShowDialog(true);
-        } else if (role === 'CUSTOMER') {
-          setShowDialog(true); // Preguntar si quiere ser salon owner
-        }
-      } else {
-        console.log('⚠️ Usuario no encontrado en BD');
-        setUserRole('NEW_USER');
-      }
-    } catch (error) {
-      console.error('❌ Error verificando rol:', error);
-      setUserRole('NEW_USER');
-    } finally {
       setLoading(false);
+      return;
     }
-  };
+
+    // Si no hay usuario autenticado
+    if (!cognitoAuth.isAuthenticated && !auth.user) {
+      setUserRole('NEW_USER');
+      setLoading(false);
+      return;
+    }
+
+    // Fallback: llamar backend solo si no hay rol en Redux
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+      setUserRole('NEW_USER');
+      setLoading(false);
+      return;
+    }
+
+    const response = await fetch('/api/users/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const userData = await response.json();
+      const role = userData.role;
+      setUserRole(role);
+
+      if (role === 'SALON_OWNER') {
+        setShowDialog(true);
+      } else if (role === 'CUSTOMER') {
+        setActiveStep(1);
+      }
+    } else {
+      setUserRole('NEW_USER');
+    }
+  } catch (error) {
+    console.error('❌ Error verificando rol:', error);
+    setUserRole('NEW_USER');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleStep = (value) => {
     setActiveStep(activeStep + value);
@@ -207,33 +215,16 @@ const SalonForm = () => {
 
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
   };
-
-  const handleDialogAction = (action) => {
+const handleDialogAction = (action) => {
     setShowDialog(false);
-    
-    switch (action) {
-      case 'CREATE_ADDITIONAL_SALON':
-        // Permitir crear salón adicional
-        console.log('✅ Permitiendo crear salón adicional');
-        setActiveStep(1); // Saltar detalles del owner
-        break;
-      case 'GO_TO_DASHBOARD':
+    if (action === 'GO_TO_DASHBOARD') {
         navigate('/salon-dashboard');
-        break;
-      case 'BECOME_SALON_OWNER':
-        // Cliente quiere convertirse en salon owner
-        console.log('✅ Cliente quiere ser salon owner');
-        setActiveStep(1); // Saltar detalles del owner
-        break;
-      case 'LOGOUT_AND_REGISTER':
-        cognitoAuth.removeUser();
-        localStorage.removeItem('jwt');
-        setUserRole('NEW_USER');
-        break;
-      default:
+    } else if (action === 'BECOME_SALON_OWNER') {
+        setActiveStep(1); // Ir a crear salón
+    } else {
         navigate('/');
     }
-  };
+};
 
   /**
    * 🎯 RENDER DIALOG SEGÚN ROL
