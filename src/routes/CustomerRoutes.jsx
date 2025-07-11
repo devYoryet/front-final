@@ -9,6 +9,7 @@ import NotFound from '../Customer/pages/NotFound/NotFound'
 import PaymentSuccessHandler from '../Customer/pages/Payment/PaymentSuccessHandler'
 import Notification from '../Customer/pages/Notifications/Notification'
 import SearchSalon from '../Customer/pages/Salon/SearchSalon'
+import ChilePaymentMock from '../Customer/pages/Payment/ChilePaymentMock'  // ✅ AGREGAR
 
 const CustomerRoutes = () => {
   return (
@@ -23,6 +24,8 @@ const CustomerRoutes = () => {
     <Route path='/search' element={<SearchSalon/>}/>
     <Route path='/notifications' element={<Notification type={"USER"}/>}/>
     <Route path='/payment-success/:id' element={<PaymentSuccessHandler/>}/>
+    {/* 🇨🇱 NUEVA RUTA PARA PAGO CHILENO */}
+    <Route path='/payment/chile-mock' element={<ChilePaymentMock/>}/>
     {/* payment-success */}
     <Route path='*' element={<NotFound />} />
   </Routes>
