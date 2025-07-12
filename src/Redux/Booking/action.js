@@ -60,16 +60,16 @@ export const fetchCustomerBookings = (jwt) => async (dispatch) => {
   }
 };
 
-export const fetchSalonBookings = ({jwt}) => async (dispatch) => {
+export const fetchSalonBookings = (jwt) => async (dispatch) => {
   dispatch({ type: FETCH_SALON_BOOKINGS_REQUEST });
   try {
-    const { data } = await api.get(`${API_BASE_URL}/salon`,{
+    const { data } = await api.get(`${API_BASE_URL}/salon`, {
       headers: { Authorization: `Bearer ${jwt}` },
     });
-    console.log("salon bookings ",data)
+    console.log("salon bookings ", data);
     dispatch({ type: FETCH_SALON_BOOKINGS_SUCCESS, payload: data });
   } catch (error) {
-    console.log("error fetching salon bookings ",error)
+    console.log("error fetching salon bookings ", error);
     dispatch({ type: FETCH_SALON_BOOKINGS_FAILURE, payload: error.message });
   }
 };

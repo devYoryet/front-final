@@ -18,8 +18,8 @@ export default function TransactionTable() {
   const dispatch = useDispatch();
 
   React.useEffect(() => {
-    dispatch(fetchSalonBookings({ jwt: localStorage.getItem("jwt") }));
-  }, []);
+    dispatch(fetchSalonBookings(localStorage.getItem("jwt"))); // ← Quitar las llaves {}
+  });
 
   return (
     <>
