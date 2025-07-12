@@ -18,8 +18,8 @@ export default function TransactionTable() {
   const dispatch = useDispatch();
 
   React.useEffect(() => {
-    dispatch(fetchSalonBookings(localStorage.getItem("jwt"))); // ← Quitar las llaves {}
-  });
+dispatch(fetchSalonBookings({ jwt: `Bearer ${localStorage.getItem("jwt")}` }));
+  }, []);
 
   return (
     <>
@@ -34,29 +34,28 @@ export default function TransactionTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {booking.bookings.map((item) => (
+            {booking.bookings && booking.bookings.map((item) => (
               <TableRow key={item.id}>
                 <TableCell align="left">
                   <div className="space-y-1">
                     <h1 className="font-medium">
-                      {item.startTime.split("T")[0]}
+                      {item.startTime?.split("T")[0] || "N/A"}
                     </h1>
-                    
                   </div>
                 </TableCell>
                 <TableCell component="th" scope="row">
                   <div className="space-y-2">
-                    <h1>{item.customer.fullName}</h1>
-                    <h1 className="font-semibold">{item.customer.email}</h1>
+                    <h1>{item.customer?.fullName || "Cliente no disponible"}</h1>
+                    <h1 className="font-semibold">{item.customer?.email || "N/A"}</h1>
                     <h1 className="font-bold text-gray-600">
-                      {item.customer.mobile}
+                      {item.customer?.mobile || "N/A"}
                     </h1>
                   </div>
                 </TableCell>
                 <TableCell>
                   Booking Id : <strong> {item.id} </strong>
                 </TableCell>
-                <TableCell align="right">₹{item.totalPrice}</TableCell>
+                <TableCell align="right">₹{item.totalPrice || 0}</TableCell>
               </TableRow>
             ))}
           </TableBody>

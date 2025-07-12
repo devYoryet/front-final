@@ -12,6 +12,9 @@ import {
   FETCH_SERVICE_BY_ID_REQUEST,
   FETCH_SERVICE_BY_ID_SUCCESS,
   FETCH_SERVICE_BY_ID_FAILURE,
+  DELETE_SERVICE_REQUEST,
+  DELETE_SERVICE_SUCCESS,
+  DELETE_SERVICE_FAILURE
 } from "./actionTypes";
 import api from "../../config/api";
 
@@ -33,7 +36,20 @@ export const createServiceAction =
       dispatch({ type: CREATE_SERVICE_FAILURE, payload: error.message });
     }
   };
-
+export const deleteService = (serviceId) => async (dispatch) => {
+  dispatch({ type: DELETE_SERVICE_REQUEST });
+  try {
+    await api.delete(`${API_BASE_URL}/salon-owner/${serviceId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("jwt")}` },
+    });
+    
+    dispatch({ type: DELETE_SERVICE_SUCCESS, payload: serviceId });
+    console.log("Servicio eliminado exitosamente");
+  } catch (error) {
+    console.log("Error eliminando servicio", error);
+    dispatch({ type: DELETE_SERVICE_FAILURE, payload: error });
+  }
+};
 export const updateService = ({id, service}) => async (dispatch) => {
   dispatch({ type: UPDATE_SERVICE_REQUEST });
   try {
@@ -82,4 +98,6 @@ export const fetchServiceById = (serviceId) => async (dispatch) => {
       payload: error,
     });
   }
+
+  
 };
