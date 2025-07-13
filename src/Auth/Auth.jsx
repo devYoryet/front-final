@@ -55,7 +55,9 @@ const Auth = () => {
 
   // Manejar registro con Cognito (método original)
   const handleCognitoSignup = () => {
-    const redirectUri = encodeURIComponent("http://localhost:3000/auth/callback");
+    //const redirectUri = encodeURIComponent("http://localhost:3000/auth/callback");
+    const redirectUri = encodeURIComponent("https://front-final-nine.vercel.app/auth/callback");
+    
     const { cognitoDomain, clientId } = require("../util/cognitoConfig");
     const signupUrl = `${cognitoDomain}/signup?client_id=${clientId}&response_type=code&scope=openid+email+profile&redirect_uri=${redirectUri}`;
     window.location.href = signupUrl;

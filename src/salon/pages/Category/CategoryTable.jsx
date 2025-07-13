@@ -1,28 +1,28 @@
 import * as React from "react";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell, { tableCellClasses } from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
 import {
-  Alert,
-  Box,
-  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   IconButton,
   Modal,
+  Box,
   Snackbar,
-  styled,
+  Alert,
   Dialog,
-  DialogActions,
-  DialogContent,
   DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  Typography,
 } from "@mui/material";
-
+import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
-import { Delete } from "@mui/icons-material";
-
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
@@ -30,11 +30,12 @@ import UpdateCategoryForm from "./UpdateCategoryForm";
 import { deleteCategory } from "../../../Redux/Category/action";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  [`&.${tableCellClasses.head}`]: {
-    backgroundColor: theme.palette.common.black,
+  "&.MuiTableCell-head": {
+    backgroundColor: "#019031",
     color: theme.palette.common.white,
+    fontWeight: "bold",
   },
-  [`&.${tableCellClasses.body}`]: {
+  "&.MuiTableCell-body": {
     fontSize: 14,
   },
 }));
@@ -46,6 +47,10 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "&:last-child td, &:last-child th": {
     border: 0,
   },
+  "&:hover": {
+    backgroundColor: "#f3f4f6",
+    transition: "background-color 0.2s ease",
+  },
 }));
 
 const style = {
@@ -53,9 +58,9 @@ const style = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 400,
+  width: 600,
   bgcolor: "background.paper",
-  border: "2px solid #000",
+  borderRadius: 2,
   boxShadow: 24,
   p: 4,
 };
@@ -68,8 +73,6 @@ export default function CategoryTable() {
   // Estados para modals y snackbars
   const [snackbarOpen, setOpenSnackbar] = useState(false);
   const [openUpdateCategoryForm, setUpdateCategoryForm] = useState(false);
-  
-  // 🚀 ESTADOS PARA ELIMINAR
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
 
@@ -81,7 +84,7 @@ export default function CategoryTable() {
   
   const handleCloseUpdateCategoryForm = () => setUpdateCategoryForm(false);
 
-  // 🚀 HANDLERS PARA ELIMINAR
+  // Handlers para eliminar
   const handleDeleteClick = (categoryItem) => () => {
     setCategoryToDelete(categoryItem);
     setDeleteDialogOpen(true);
@@ -105,104 +108,149 @@ export default function CategoryTable() {
   };
 
   React.useEffect(() => {
-    if (category.updated || category.error) {
+    if (category.updated || category.error || category.deleted) {
       setOpenSnackbar(true);
     }
-  }, [category.updated, category.error]);
+  }, [category.updated, category.error, category.deleted]);
 
   return (
     <>
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 700 }} aria-label="customized table">
+      <TableContainer component={Paper} elevation={3} className="rounded-lg">
+        <Table sx={{ minWidth: 700 }} aria-label="tabla de categorías">
           <TableHead>
             <TableRow>
-              <StyledTableCell>Image</StyledTableCell>
-              <StyledTableCell>Title</StyledTableCell>
-              <StyledTableCell align="right">Update</StyledTableCell>
-              <StyledTableCell align="right">Delete</StyledTableCell>
+              <StyledTableCell>Imagen</StyledTableCell>
+              <StyledTableCell>Nombre de Categoría</StyledTableCell>
+              <StyledTableCell align="center">Acciones</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {category.categories.map((item) => (
-              <StyledTableRow key={item.id}>
-                <StyledTableCell component="th" scope="row">
-                  <div className="flex gap-1 flex-wrap">
-                    <img className="w-20 rounded-md" src={item.image} alt="" />
+            {category.categories && category.categories.length > 0 ? (
+              category.categories.map((item) => (
+                <StyledTableRow key={item.id}>
+                  <StyledTableCell component="th" scope="row">
+                    <img 
+                      className="w-16 h-16 rounded-lg object-cover shadow-sm" 
+                      src={item.image} 
+                      alt={item.name}
+                    />
+                  </StyledTableCell>
+                  <StyledTableCell>
+                    <Typography variant="subtitle1" className="font-semibold text-gray-800">
+                      {item.name}
+                    </Typography>
+                  </StyledTableCell>
+                  <StyledTableCell align="center">
+                    <div className="flex gap-2 justify-center">
+                      <IconButton
+                        onClick={handleOpenUpdateCategoryForm(item.id)}
+                        color="primary"
+                        className="hover:bg-blue-50"
+                        title="Editar categoría"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={handleDeleteClick(item)}
+                        color="error"
+                        className="hover:bg-red-50"
+                        title="Eliminar categoría"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </div>
+                  </StyledTableCell>
+                </StyledTableRow>
+              ))
+            ) : (
+              <StyledTableRow>
+                <StyledTableCell colSpan={3} align="center" className="py-8">
+                  <div className="text-gray-500">
+                    <Typography variant="h6" className="mb-2">
+                      No hay categorías registradas
+                    </Typography>
+                    <Typography variant="body2">
+                      Crea categorías para organizar tus servicios
+                    </Typography>
                   </div>
                 </StyledTableCell>
-                <StyledTableCell>{item.name}</StyledTableCell>
-                <StyledTableCell align="right">
-                  <IconButton
-                    onClick={handleOpenUpdateCategoryForm(item.id)}
-                    color="primary"
-                    className="bg-primary-color"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </StyledTableCell>
-                {/* 🚀 BOTÓN ELIMINAR */}
-                <StyledTableCell align="right">
-                  <IconButton
-                    onClick={handleDeleteClick(item)}
-                    color="error"
-                  >
-                    <Delete />
-                  </IconButton>
-                </StyledTableCell>
               </StyledTableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* Modal para actualizar categoría */}
+      {/* Modal de actualización */}
       <Modal
         open={openUpdateCategoryForm}
         onClose={handleCloseUpdateCategoryForm}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
+        aria-labelledby="modal-actualizar-categoria"
       >
         <Box sx={style}>
           <UpdateCategoryForm onClose={handleCloseUpdateCategoryForm} />
         </Box>
       </Modal>
 
-      {/* 🚀 MODAL DE CONFIRMACIÓN PARA ELIMINAR */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
-        <DialogTitle>Confirmar eliminación</DialogTitle>
+      {/* Dialog de confirmación de eliminación */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="confirmar-eliminacion"
+      >
+        <DialogTitle className="text-red-600 font-bold">
+          Confirmar Eliminación
+        </DialogTitle>
         <DialogContent>
-          ¿Estás seguro de que deseas eliminar la categoría "{categoryToDelete?.name}"?
-          <br /><br />
-          <strong>Nota:</strong> Los servicios asociados a esta categoría quedarán sin categoría asignada.
+          <DialogContentText>
+            ¿Estás seguro de que deseas eliminar la categoría <strong>"{categoryToDelete?.name}"</strong>?
+            <br />
+            <br />
+            <strong>Nota:</strong> Los servicios asociados a esta categoría quedarán sin categoría asignada.
+          </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
+        <DialogActions className="p-4">
+          <Button 
+            onClick={handleDeleteCancel} 
+            color="inherit"
+            className="text-gray-600"
+          >
             Cancelar
           </Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            className="bg-red-600 hover:bg-red-700"
+          >
             Eliminar
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar para mostrar mensajes de éxito/error */}
+      {/* Snackbar de notificaciones */}
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         open={snackbarOpen}
-        autoHideDuration={6000}
+        autoHideDuration={4000}
         onClose={handleCloseSnackbar}
       >
         <Alert
           onClose={handleCloseSnackbar}
-          severity={category.updated ? "success" : "error"}
+          severity={
+            category.deleted 
+              ? "success" 
+              : category.updated 
+                ? "success" 
+                : "error"
+          }
           variant="filled"
           sx={{ width: "100%" }}
         >
-          {category.updated
+          {category.deleted
+            ? "Categoría eliminada exitosamente"
+            : category.updated
             ? "Categoría actualizada exitosamente"
-            : category.error
-            ? category.error
-            : ""}
+            : category.error || "Error en la operación"}
         </Alert>
       </Snackbar>
     </>

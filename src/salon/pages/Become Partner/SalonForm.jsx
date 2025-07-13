@@ -192,7 +192,9 @@ const SalonForm = () => {
   };
 
   const redirectToCognito = (values) => {
-    const redirectUri = encodeURIComponent("http://localhost:3000/auth/callback");
+    //const redirectUri = encodeURIComponent("http://localhost:3000/auth/callback");
+    const redirectUri = encodeURIComponent("https://front-final-nine.vercel.app/auth/callback");
+
     const state = encodeURIComponent(JSON.stringify({ 
       role: 'SALON_OWNER',
       returnTo: 'create-salon'
