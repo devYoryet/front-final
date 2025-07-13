@@ -29,13 +29,13 @@ export const clientId = "53h6m5krqkq8phqtf63ed0otu5";
 // URLs para diferentes acciones de Cognito
 export const getCognitoUrls = () => {
  // const redirectUri = encodeURIComponent("http://localhost:3000/auth/callback");
-  const redirectUri = encodeURIComponent("https://front-final-nine.vercel.app//auth/callback");
+  const redirectUri = encodeURIComponent("https://front-final-nine.vercel.app/auth/callback");
 
   return {
     login: `${cognitoDomain}/login?client_id=${clientId}&response_type=code&scope=openid+email+profile&redirect_uri=${redirectUri}`,
     signup: `${cognitoDomain}/signup?client_id=${clientId}&response_type=code&scope=openid+email+profile&redirect_uri=${redirectUri}`,
     //logout: `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent("http://localhost:3000/")}`,
-    logout: `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent("http://https://front-final-nine.vercel.app/")}`,
+    logout: `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent("https://front-final-nine.vercel.app/")}`,
 
     // URLs para diferentes tipos de usuario con estado personalizado
     signupCustomer: `${cognitoDomain}/signup?client_id=${clientId}&response_type=code&scope=openid+email+profile&redirect_uri=${redirectUri}&state=role-customer`,
