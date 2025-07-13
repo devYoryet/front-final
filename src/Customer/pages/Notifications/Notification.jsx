@@ -18,7 +18,9 @@ const Notification = ({type}) => {
   const [stompClient, setStompClient] = useState(null);
 
   useEffect(() => {
-    const sock = new SockJS("http://localhost:5000/api/notifications/ws");
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const sock = new SockJS(`${API_URL}/api/notifications/ws`);
+    //const sock = new SockJS("http://localhost:5000/api/notifications/ws");
     const stomp = Stomp.over(sock);
     setStompClient(stomp);
   }, []);
