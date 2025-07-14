@@ -1,4 +1,4 @@
-// src/Auth/AuthCallback.jsx - VERSIÓN FINAL SIMPLE
+// src/Auth/AuthCallback.jsx - VERSIÓN FINAL SIMPLIFICADA
 import React, { useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -57,11 +57,15 @@ const AuthCallback = () => {
             return;
           }
           
-          // 4. 🚀 LLAMAR AL BACKEND usando variable de entorno
+          // 4. 🚀 LLAMAR AL BACKEND usando detección automática de entorno
           console.log('🔄 Consultando backend para obtener rol del usuario...');
           
-          // Usar la misma URL que api.js
-          const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+          // Detectar entorno y usar URL correcta
+          const isDevelopment = window.location.hostname === 'localhost';
+          const API_BASE_URL = isDevelopment 
+            ? 'http://localhost:5000' 
+            : 'https://34.203.37.29';
+            
           console.log('🔗 Usando API_BASE_URL:', API_BASE_URL);
           
           const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
@@ -107,16 +111,8 @@ const AuthCallback = () => {
             // 8. Error obteniendo usuario
             console.error('❌ Error obteniendo usuario del backend:', response.status);
             
-            // Si es HTML (como en tu error), mostrar parte del contenido
             const errorText = await response.text();
             console.error('❌ Contenido del error:', errorText.substring(0, 200));
-            
-            // Verificar si es problema de CORS o endpoint no encontrado
-            if (response.status === 404) {
-              console.log('🔍 Endpoint no encontrado - verificar que el Gateway esté corriendo');
-            } else if (response.status === 0) {
-              console.log('🌐 Error de CORS o conectividad');
-            }
             
             // Fallback: crear usuario temporal y redirigir a home
             const fallbackUser = {
@@ -179,7 +175,7 @@ const AuthCallback = () => {
         <p className="mt-4 text-lg">Completando autenticación...</p>
         <div className="mt-4 text-sm text-gray-500">
           <p>Authenticated: {auth.isAuthenticated ? 'Sí' : 'No'}</p>
-          <p>API URL: {process.env.REACT_APP_API_URL || 'localhost'}</p>
+          <p>Environment: {window.location.hostname === 'localhost' ? 'Development' : 'Production'}</p>
         </div>
       </div>
     </div>
