@@ -20,16 +20,26 @@ export const paymentScuccess =
 
       dispatch({
         type: PROCEED_PAYMENT_SUCCESS,
-        payload: response.data,
+        payload: response.data.message || "Pago procesado exitosamente",
       });
-      
-      console.log("Payment", response.data);
     } catch (error) {
-        console.log("Payment failed", error);
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Error inesperado al procesar el pago";
 
-      dispatch({
-        type: PROCEED_PAYMENT_FAILURE,
-        payload: error.response ? error.response.data : error.message,
-      });
+      const alreadyConfirmed = errMsg.toLowerCase().includes("confirmada");
+
+      if (alreadyConfirmed) {
+        dispatch({
+          type: PROCEED_PAYMENT_SUCCESS,
+          payload: "Pago ya estaba confirmado",
+        });
+      } else {
+        dispatch({
+          type: PROCEED_PAYMENT_FAILURE,
+          payload: errMsg,
+        });
+      }
     }
   };
