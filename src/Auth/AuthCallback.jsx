@@ -57,8 +57,8 @@ const AuthCallback = () => {
             return;
           }
           
-          // 4. 🚀 LLAMAR AL BACKEND usando detección automática de entorno
-          console.log('🔄 Consultando backend para obtener rol del usuario...');
+          // 4. 🚀 LLAMAR AL BACKEND usando endpoint específico para Cognito
+          console.log('🔄 Consultando backend para obtener/crear usuario desde Cognito...');
           
           // Detectar entorno y usar URL correcta
           const isDevelopment = window.location.hostname === 'localhost';
@@ -68,13 +68,33 @@ const AuthCallback = () => {
             
           console.log('🔗 Usando API_BASE_URL:', API_BASE_URL);
           
-          const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+          // 🚀 USAR ENDPOINT QUE CREA USUARIO AUTOMÁTICAMENTE
+          // Intentar primero el endpoint específico de Cognito
+          let response = await fetch(`${API_BASE_URL}/api/users/cognito-profile`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${auth.user.id_token}`,
               'Content-Type': 'application/json'
             }
           });
+          
+          // Si no existe ese endpoint, usar el endpoint que procesa usuarios de Cognito
+          if (response.status === 404) {
+            console.log('🔄 Endpoint cognito-profile no encontrado, usando endpoint alternativo...');
+            response = await fetch(`${API_BASE_URL}/api/users/process-cognito`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${auth.user.id_token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                cognitoUserId: cognitoSub,
+                email: email,
+                fullName: name,
+                role: 'CUSTOMER'
+              })
+            });
+          }
           
           console.log('📡 Response status:', response.status);
           
