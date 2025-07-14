@@ -90,6 +90,12 @@ import {
         };
   
       case FETCH_NOTIFICATIONS_FAILURE:
+        return {
+          ...state,
+          loading: false,
+          error: action.payload,
+          notifications: Array.isArray(state.notifications) ? state.notifications : [] // ✅ Mantener array
+        };
       case FETCH_NOTIFICATIONS_BY_USER_FAILURE:
       case FETCH_NOTIFICATIONS_BY_SALON_FAILURE:
       case CREATE_NOTIFICATION_FAILURE:

@@ -18,7 +18,7 @@ const Notification = ({type}) => {
 
   useEffect(() => {
     // 🔧 FIX: USAR URL DINÁMICA EN LUGAR DE LOCALHOST HARDCODED
-    const API_URL = process.env.REACT_APP_API_URL || 'https://34.203.37.29:5000';
+    const API_URL = process.env.REACT_APP_API_URL || 'https://34.203.37.29';
     console.log('🔌 Conectando WebSocket a:', `${API_URL}/api/notifications/ws`);
     
     const sock = new SockJS(`${API_URL}/api/notifications/ws`);

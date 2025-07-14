@@ -12,7 +12,7 @@ const useNotificationWebsoket = (userId,type) => {
     const [stompClient, setStompClient] = useState(null);
     useEffect(() => {
         if (!userId) return; // Only connect if userId is available
-        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        const API_URL = process.env.REACT_APP_API_URL || 'https://34.203.37.29';
         const sock = new SockJS(`${API_URL}/api/notifications/ws`);
         //const sock = new SockJS("http://localhost:5000/api/notifications/ws");
         const stomp = Stomp.over(sock);
