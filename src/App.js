@@ -16,6 +16,7 @@ import AdminRoutes from "./routes/AdminRoutes";
 import AdminDashboard from "./Admin/pages/Dashboard/Dashboard";
 import { useAuth } from "react-oidc-context";
 import redTheme from "./Theme/redTheme";
+import SimpleSearch from './Customer/pages/Salon/SimpleSearch';
 
 
 function App() {
@@ -48,6 +49,8 @@ function App() {
           <Route path="/register" element={<Auth />} />
           <Route path="/become-partner" element={<BecomePartner />} />
           <Route path="/admin/*" element={<AdminDashboard/>} />
+          <Route path="/buscar" element={<SimpleSearch />} />
+
           <Route path="*" element={<CustomerRoutes />} />
         </Routes>
       </div>

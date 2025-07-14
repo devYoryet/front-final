@@ -256,3 +256,55 @@ const updateUserRoleInRedux = async (dispatch, getState, jwt) => {
     console.error("⚠️ Error actualizando rol del usuario:", error);
   }
 };
+
+// 🏙️ NUEVA ACCIÓN 1: Obtener ciudades disponibles
+export const fetchAvailableCities = () => async (dispatch) => {
+  try {
+    console.log("🏙️ Obteniendo ciudades disponibles...");
+
+    const { data } = await api.get(`${API_BASE_URL}/cities`);
+    
+    console.log("✅ Ciudades obtenidas:", data);
+    return data; // Retornamos las ciudades directamente
+    
+  } catch (error) {
+    console.log("❌ Error obteniendo ciudades:", error);
+    // Fallback en caso de error
+    return ["Santiago", "Valparaíso", "Concepción", "La Serena", "Temuco"];
+  }
+};
+
+// 🔍 NUEVA ACCIÓN 2: Búsqueda con filtros múltiples
+export const searchSalonsWithFilters = (filters) => async (dispatch) => {
+  dispatch({ type: SEARCH_SALONS_REQUEST });
+  
+  try {
+    const jwt = getJwtToken();
+    
+    if (!jwt) {
+      throw new Error("No hay token de autenticación");
+    }
+
+    console.log("🔍 Búsqueda con filtros:", filters);
+
+    // Construir parámetros de consulta
+    const params = new URLSearchParams();
+    
+    if (filters.city) params.append('city', filters.city);
+    if (filters.salonName) params.append('salonName', filters.salonName);
+    if (filters.homeService) params.append('homeService', filters.homeService);
+
+    const { data } = await api.get(`${API_BASE_URL}/search/filters?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    
+    console.log("✅ Resultados búsqueda con filtros:", data);
+    dispatch({ type: SEARCH_SALONS_SUCCESS, payload: data });
+    
+    return data;
+  } catch (error) {
+    console.log("❌ Error en búsqueda con filtros:", error);
+    dispatch({ type: SEARCH_SALONS_FAILURE, payload: error.message });
+    throw error;
+  }
+};
