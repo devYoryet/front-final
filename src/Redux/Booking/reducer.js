@@ -1,3 +1,4 @@
+// src/Redux/Booking/reducer.js
 import {
   CREATE_BOOKING_REQUEST,
   CREATE_BOOKING_SUCCESS,
@@ -26,7 +27,8 @@ const initialState = {
   booking: null,
   loading: false,
   error: null,
-  report:null,
+  report: null,
+  totalBookings: 0, // ✅ AGREGAR CONTADOR
 };
 
 const bookingReducer = (state = initialState, action) => {
@@ -41,9 +43,16 @@ const bookingReducer = (state = initialState, action) => {
     case CREATE_BOOKING_SUCCESS:
       return { ...state, loading: false, booking: action.payload };
 
+    // 🚀 CORRECCIÓN CRÍTICA: Manejar estructura del backend
     case FETCH_CUSTOMER_BOOKINGS_SUCCESS:
     case FETCH_SALON_BOOKINGS_SUCCESS:
-      return { ...state, loading: false, bookings: action.payload };
+      return { 
+        ...state, 
+        loading: false, 
+        // ✅ EXTRAER EL ARRAY DE BOOKINGS DE LA RESPUESTA ESTRUCTURADA
+        bookings: action.payload.bookings || action.payload || [],
+        totalBookings: action.payload.totalBookings || (action.payload.bookings ? action.payload.bookings.length : 0)
+      };
 
     case FETCH_BOOKING_BY_ID_SUCCESS:
       return { ...state, loading: false, booking: action.payload };
@@ -63,20 +72,26 @@ const bookingReducer = (state = initialState, action) => {
         loading: false,
         report: action.payload,
       };
-      case FETCH_BOOKED_SLOTS_SUCCESS:
-        return {
-          ...state,
-          loading: false,
-          slots: action.payload,
-          error: null,
-        };
+
+    case FETCH_BOOKED_SLOTS_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        slots: action.payload,
+        error: null,
+      };
 
     case CREATE_BOOKING_FAILURE:
     case FETCH_CUSTOMER_BOOKINGS_FAILURE:
     case FETCH_SALON_BOOKINGS_FAILURE:
     case FETCH_BOOKING_BY_ID_FAILURE:
     case UPDATE_BOOKING_STATUS_FAILURE:
-      return { ...state, loading: false, error: action.payload };
+      return { 
+        ...state, 
+        loading: false, 
+        error: action.payload,
+        bookings: [], // ✅ ASEGURAR ARRAY VACÍO EN ERROR
+      };
 
     default:
       return state;
