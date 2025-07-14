@@ -68,31 +68,37 @@ const AuthCallback = () => {
             
           console.log('🔗 Usando API_BASE_URL:', API_BASE_URL);
           
-          // 🚀 USAR ENDPOINT QUE CREA USUARIO AUTOMÁTICAMENTE
-          // Intentar primero el endpoint específico de Cognito
-          let response = await fetch(`${API_BASE_URL}/api/users/cognito-profile`, {
-            method: 'GET',
+          // 🚀 USAR ENDPOINT CORRECTO BASADO EN EL CÓDIGO REAL
+          console.log('🔄 Intentando crear usuario si no existe...');
+          
+          // Primero crear el usuario en BD usando el endpoint correcto
+          const createResponse = await fetch(`${API_BASE_URL}/api/users/create-from-cognito`, {
+            method: 'POST',
             headers: {
               'Authorization': `Bearer ${auth.user.id_token}`,
               'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+              cognitoUserId: cognitoSub,
+              email: email,
+              fullName: name,
+              role: 'CUSTOMER'
+            })
           });
           
-          // Si no existe ese endpoint, usar el endpoint que procesa usuarios de Cognito
-          if (response.status === 404) {
-            console.log('🔄 Endpoint cognito-profile no encontrado, usando endpoint alternativo...');
-            response = await fetch(`${API_BASE_URL}/api/users/process-cognito`, {
-              method: 'POST',
+          let response;
+          if (createResponse.ok) {
+            console.log('✅ Usuario creado exitosamente');
+            response = createResponse;
+          } else {
+            console.log('🔄 Usuario ya existe, obteniendo datos...');
+            // Si ya existe, obtener por Cognito ID
+            response = await fetch(`${API_BASE_URL}/api/users/by-cognito-id/${cognitoSub}`, {
+              method: 'GET',
               headers: {
                 'Authorization': `Bearer ${auth.user.id_token}`,
                 'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                cognitoUserId: cognitoSub,
-                email: email,
-                fullName: name,
-                role: 'CUSTOMER'
-              })
+              }
             });
           }
           
