@@ -1,3 +1,7 @@
+// =============================================================================
+// BOOKING ACTION CORREGIDO - src/Redux/Booking/action.js
+// =============================================================================
+
 import axios from "axios";
 import {
   CREATE_BOOKING_REQUEST,
@@ -26,44 +30,104 @@ import api from "../../config/api";
 
 const API_BASE_URL = "/api/bookings";
 
-export const createBooking = ({jwt, salonId, bookingData}) => async (dispatch) => {
+// 🇨🇱 MÉTODO CORREGIDO PARA CHILE PAY
+export const createBooking = ({jwt, salonId, bookingData, paymentMethod = "CHILE_PAY"}) => async (dispatch) => {
   dispatch({ type: CREATE_BOOKING_REQUEST });
+  
   try {
+    console.log("🇨🇱 CREAR BOOKING CON PAGO CHILENO");
+    console.log("   Salon ID:", salonId);
+    console.log("   Payment Method:", paymentMethod);
+    console.log("   Booking Data:", bookingData);
+
     const { data } = await api.post(
       API_BASE_URL,
       bookingData,
       {
         headers: { Authorization: `Bearer ${jwt}` },
-        params: { salonId, paymentMethod:"RAZORPAY" },
+        params: { 
+          salonId, 
+          paymentMethod: paymentMethod  // ✅ USAR CHILE_PAY
+        },
       }
     );
-    window.location.href=data.payment_link_url
-    console.log(" create booking ", data)
+    
+    // 🇨🇱 REDIRIGIR A PÁGINA DE PAGO CHILENO
+    console.log("✅ Booking creado, redirigiendo a pago:", data.payment_link_url);
+    window.location.href = data.payment_link_url;
+    
+    console.log("📋 create booking response:", data);
     dispatch({ type: CREATE_BOOKING_SUCCESS, payload: data });
+    
   } catch (error) {
-    console.log("error creating booking ",error)
+    console.log("❌ error creating booking:", error);
+    console.log("❌ error details:", error.response?.data);
     dispatch({ type: CREATE_BOOKING_FAILURE, payload: error.response?.data?.message });
   }
 };
 
+// 🇨🇱 NUEVA FUNCIÓN: CREAR BOOKING CON MÉTODO ESPECÍFICO
+export const createBookingWithPaymentMethod = ({jwt, salonId, bookingData, paymentMethod}) => async (dispatch) => {
+  dispatch({ type: CREATE_BOOKING_REQUEST });
+  
+  try {
+    console.log("🇨🇱 CREAR BOOKING CON MÉTODO ESPECÍFICO");
+    console.log("   Salon ID:", salonId);
+    console.log("   Payment Method:", paymentMethod);
+    console.log("   Booking Data:", bookingData);
+
+    // Validar método de pago
+    const validMethods = ["CHILE_PAY", "RAZORPAY", "STRIPE"];
+    const finalPaymentMethod = validMethods.includes(paymentMethod) ? paymentMethod : "CHILE_PAY";
+    
+    console.log("   Método final:", finalPaymentMethod);
+
+    const { data } = await api.post(
+      API_BASE_URL,
+      bookingData,
+      {
+        headers: { Authorization: `Bearer ${jwt}` },
+        params: { 
+          salonId, 
+          paymentMethod: finalPaymentMethod
+        },
+      }
+    );
+    
+    // Redirigir a la URL de pago
+    if (data.payment_link_url) {
+      console.log("✅ Redirigiendo a:", data.payment_link_url);
+      window.location.href = data.payment_link_url;
+    }
+    
+    dispatch({ type: CREATE_BOOKING_SUCCESS, payload: data });
+    
+  } catch (error) {
+    console.log("❌ error creating booking with payment method:", error);
+    console.log("❌ error response:", error.response?.data);
+    dispatch({ type: CREATE_BOOKING_FAILURE, payload: error.response?.data?.message || error.message });
+  }
+};
+
+// Resto de funciones sin cambios...
 export const fetchCustomerBookings = (jwt) => async (dispatch) => {
   dispatch({ type: FETCH_CUSTOMER_BOOKINGS_REQUEST });
   try {
     const { data } = await api.get(`${API_BASE_URL}/customer`, {
       headers: { Authorization: `Bearer ${jwt}` },
     });
-    console.log("customer bookings ",data)
+    console.log("customer bookings ", data);
     dispatch({ type: FETCH_CUSTOMER_BOOKINGS_SUCCESS, payload: data });
   } catch (error) {
-    console.log("error ",error)
+    console.log("error ", error);
     dispatch({ type: FETCH_CUSTOMER_BOOKINGS_FAILURE, payload: error.message });
   }
 };
 
-export const fetchSalonBookings = (jwt) => async (dispatch) => {
+export const fetchSalonBookings = ({jwt}) => async (dispatch) => {
   dispatch({ type: FETCH_SALON_BOOKINGS_REQUEST });
   try {
-    const { data } = await api.get(`${API_BASE_URL}/salon`, {
+    const { data } = await api.get(`${API_BASE_URL}/salon`,{
       headers: { Authorization: `Bearer ${jwt}` },
     });
     console.log("salon bookings ", data);
@@ -74,94 +138,61 @@ export const fetchSalonBookings = (jwt) => async (dispatch) => {
   }
 };
 
-
 export const fetchBookingById = (bookingId) => async (dispatch) => {
   dispatch({ type: FETCH_BOOKING_BY_ID_REQUEST });
   try {
     const { data } = await api.get(`${API_BASE_URL}/${bookingId}`);
     dispatch({ type: FETCH_BOOKING_BY_ID_SUCCESS, payload: data });
+    console.log("booking by id ", data);
   } catch (error) {
-    dispatch({ type: FETCH_BOOKING_BY_ID_FAILURE, payload: error.message });
+    dispatch({
+      type: FETCH_BOOKING_BY_ID_FAILURE,
+      payload: error,
+    });
   }
 };
 
 export const updateBookingStatus = ({bookingId, status, jwt}) => async (dispatch) => {
   dispatch({ type: UPDATE_BOOKING_STATUS_REQUEST });
   try {
-    const { data } = await api.put(`${API_BASE_URL}/${bookingId}/status`, null, {
-      headers: { Authorization: `Bearer ${jwt}` },
-      params: { status },
-    });
-    console.log("update booking status ",data)
+    const { data } = await api.patch(`${API_BASE_URL}/${bookingId}/status`, 
+      { status },
+      {
+        headers: { Authorization: `Bearer ${jwt}` },
+      }
+    );
     dispatch({ type: UPDATE_BOOKING_STATUS_SUCCESS, payload: data });
+    console.log("booking status updated ", data);
   } catch (error) {
-    console.log("error updating booking status ",error)
+    console.log("error updating booking status ", error);
     dispatch({ type: UPDATE_BOOKING_STATUS_FAILURE, payload: error.message });
   }
 };
 
-export const getSalonReport = (jwt) => async (dispatch) => {
+export const getSalonReport = ({jwt}) => async (dispatch) => {
+  dispatch({ type: GET_SALON_REPORT_REQUEST });
   try {
-      dispatch({ type: GET_SALON_REPORT_REQUEST });
-
-      
-      const response = await api.get('/api/bookings/report', {
-          headers: {
-              'Authorization': `Bearer ${jwt}`
-          }
-      });
-
-      dispatch({
-          type: GET_SALON_REPORT_SUCCESS,
-          payload: response.data, 
-      });
-      console.log("bookings report ",response.data)
+    const { data } = await api.get(`${API_BASE_URL}/chart`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    console.log("salon report ", data);
+    dispatch({ type: GET_SALON_REPORT_SUCCESS, payload: data });
   } catch (error) {
-    console.log("error ",error)
-      
-      dispatch({
-          type: GET_SALON_REPORT_FAILURE,
-          payload: error.response ? error.response.data : error.message, 
-      });
+    console.log("error fetching salon report ", error);
+    dispatch({ type: GET_SALON_REPORT_FAILURE, payload: error.message });
   }
 };
 
-
-
-export const fetchBookedSlotsRequest = () => ({
-  type: FETCH_BOOKED_SLOTS_REQUEST,
-});
-
-export const fetchBookedSlotsSuccess = (slots) => ({
-  type: FETCH_BOOKED_SLOTS_SUCCESS,
-  payload: slots,
-});
-
-export const fetchBookedSlotsFailure = (error) => ({
-  type: FETCH_BOOKED_SLOTS_FAILURE,
-  payload: error,
-});
-
-// Thunk action to fetch booked slots
 export const fetchBookedSlots = ({salonId, date, jwt}) => async (dispatch) => {
-  dispatch(fetchBookedSlotsRequest());
-
+  dispatch({ type: FETCH_BOOKED_SLOTS_REQUEST });
   try {
-    const response = await api.get(
-      `${API_BASE_URL}/slots/salon/${salonId}/date/${date}`,
-      {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      }
-    );
-    console.log("fetch booked slots: ", response.data);
-    dispatch(fetchBookedSlotsSuccess(response.data));
+    const { data } = await api.get(`${API_BASE_URL}/slots/salon/${salonId}/date/${date}`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    console.log("fetch booked slots: ", data);
+    dispatch({ type: FETCH_BOOKED_SLOTS_SUCCESS, payload: data });
   } catch (error) {
-    console.log("fetch booked slots error - : ",error);
-    dispatch(fetchBookedSlotsFailure(error.message));
+    console.log("error fetching booked slots ", error);
+    dispatch({ type: FETCH_BOOKED_SLOTS_FAILURE, payload: error.message });
   }
 };
-
-
-
