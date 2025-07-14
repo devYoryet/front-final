@@ -64,7 +64,7 @@ const AuthCallback = () => {
           const isDevelopment = window.location.hostname === 'localhost';
           const API_BASE_URL = isDevelopment 
             ? 'http://localhost:5000' 
-            : 'https://34.203.37.29';
+            : 'https://34.203.37.29.sslip.io';
             
           console.log('🔗 Usando API_BASE_URL:', API_BASE_URL);
           

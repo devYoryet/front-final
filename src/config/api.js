@@ -7,7 +7,7 @@ const isDevelopment = window.location.hostname === 'localhost';
 // 🔗 CONFIGURAR URL SEGÚN ENTORNO
 const API_BASE_URL = isDevelopment 
     ? 'http://localhost:5000'           // Desarrollo local
-    : 'https://34.203.37.29';           // Producción con HTTPS
+    : 'https://34.203.37.29.sslip.io';  // Producción con certificado SSL válido
 
 console.log('🌐 Entorno:', isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION');
 console.log('🔗 API_BASE_URL:', API_BASE_URL);
