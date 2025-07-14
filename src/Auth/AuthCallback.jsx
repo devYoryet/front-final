@@ -1,4 +1,4 @@
-// src/Auth/AuthCallback.jsx - CORREGIDO
+// src/Auth/AuthCallback.jsx - VERSIÓN FINAL SIMPLE
 import React, { useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -37,7 +37,6 @@ const AuthCallback = () => {
           const pendingSalonData = localStorage.getItem('pendingSalonData');
           if (pendingSalonData) {
             console.log('🏢 Datos de salón pendientes encontrados');
-            // Crear el salón con los datos guardados
             const salonData = JSON.parse(pendingSalonData);
             localStorage.removeItem('pendingSalonData');
             
@@ -58,16 +57,22 @@ const AuthCallback = () => {
             return;
           }
           
-          // 4. 🚀 LLAMAR AL BACKEND para obtener/crear usuario y obtener rol de BD
+          // 4. 🚀 LLAMAR AL BACKEND usando variable de entorno
           console.log('🔄 Consultando backend para obtener rol del usuario...');
           
-          const response = await fetch('/api/users/profile', {
+          // Usar la misma URL que api.js
+          const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+          console.log('🔗 Usando API_BASE_URL:', API_BASE_URL);
+          
+          const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${auth.user.id_token}`,
               'Content-Type': 'application/json'
             }
           });
+          
+          console.log('📡 Response status:', response.status);
           
           if (response.ok) {
             // 5. Usuario existe o fue creado, obtener rol de la BD
@@ -101,6 +106,17 @@ const AuthCallback = () => {
           } else {
             // 8. Error obteniendo usuario
             console.error('❌ Error obteniendo usuario del backend:', response.status);
+            
+            // Si es HTML (como en tu error), mostrar parte del contenido
+            const errorText = await response.text();
+            console.error('❌ Contenido del error:', errorText.substring(0, 200));
+            
+            // Verificar si es problema de CORS o endpoint no encontrado
+            if (response.status === 404) {
+              console.log('🔍 Endpoint no encontrado - verificar que el Gateway esté corriendo');
+            } else if (response.status === 0) {
+              console.log('🌐 Error de CORS o conectividad');
+            }
             
             // Fallback: crear usuario temporal y redirigir a home
             const fallbackUser = {
@@ -139,7 +155,6 @@ const AuthCallback = () => {
     return () => clearTimeout(timer);
   }, [auth.isAuthenticated, auth.error, auth.user, navigate, dispatch, location]);
 
-  // Mostrar error si existe
   if (auth.error) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -157,7 +172,6 @@ const AuthCallback = () => {
     );
   }
 
-  // Mostrar loading mientras procesa
   return (
     <div className="flex justify-center items-center h-screen">
       <div className="text-center">
@@ -165,7 +179,7 @@ const AuthCallback = () => {
         <p className="mt-4 text-lg">Completando autenticación...</p>
         <div className="mt-4 text-sm text-gray-500">
           <p>Authenticated: {auth.isAuthenticated ? 'Sí' : 'No'}</p>
-          <p>Processing: {auth.isLoading ? 'Sí' : 'No'}</p>
+          <p>API URL: {process.env.REACT_APP_API_URL || 'localhost'}</p>
         </div>
       </div>
     </div>
