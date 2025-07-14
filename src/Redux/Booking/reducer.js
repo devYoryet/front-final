@@ -82,6 +82,11 @@ const bookingReducer = (state = initialState, action) => {
       };
 
     case CREATE_BOOKING_FAILURE:
+    return {
+      ...state,
+      isLoading: false,
+      error: action.payload,  // ✅ Incluye el flag showToast
+    };
     case FETCH_CUSTOMER_BOOKINGS_FAILURE:
     case FETCH_SALON_BOOKINGS_FAILURE:
     case FETCH_BOOKING_BY_ID_FAILURE:

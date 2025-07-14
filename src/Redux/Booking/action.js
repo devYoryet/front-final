@@ -60,12 +60,20 @@ export const createBooking = ({jwt, salonId, bookingData, paymentMethod = "CHILE
     dispatch({ type: CREATE_BOOKING_SUCCESS, payload: data });
     
   } catch (error) {
-    console.log("❌ error creating booking:", error);
-    console.log("❌ error details:", error.response?.data);
-    dispatch({ type: CREATE_BOOKING_FAILURE, payload: error.response?.data?.message });
+    console.log("❌ Error creating booking:", error);
+    
+    // Extraer mensaje del error
+    const errorMessage = error.response?.data?.message || "Error al crear la reserva";
+    
+    dispatch({ 
+      type: CREATE_BOOKING_FAILURE, 
+      payload: {
+        message: errorMessage,
+        showToast: true  // ✅ Flag para mostrar toast
+      }
+    });
   }
 };
-
 // 🇨🇱 NUEVA FUNCIÓN: CREAR BOOKING CON MÉTODO ESPECÍFICO
 export const createBookingWithPaymentMethod = ({jwt, salonId, bookingData, paymentMethod}) => async (dispatch) => {
   dispatch({ type: CREATE_BOOKING_REQUEST });

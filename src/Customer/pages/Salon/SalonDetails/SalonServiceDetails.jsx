@@ -28,8 +28,10 @@ import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { fetchServicesBySalonId } from "../../../../Redux/Salon Services/action";
 import { getTodayDate } from "../../../../util/getTodayDate";
+import ErrorToast, { useErrorToast } from '../../../../components/ErrorToast';
 
 const SalonServiceDetails = () => {
+   const { error, showError, showErrorMessage, hideError } = useErrorToast();
   const { salon, service, category, booking } = useSelector((store) => store);
   const handleCloseSnackbar = () => setSnackbarOpen(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -95,11 +97,18 @@ const SalonServiceDetails = () => {
         bookingData: { serviceIds, startTime: bookingData.time },
         salonId: id,
         jwt: localStorage.getItem("jwt"),
+        paymentMethod: "CHILE_PAY"
+
       })
     );
     console.log("booking data ", bookingData);
   };
-
+// ✅ Escuchar errores del reducer
+  useEffect(() => {
+    if (booking.error?.showToast) {
+      showErrorMessage(booking.error.message);
+    }
+  }, [booking.error]);
   useEffect(() => {
     dispatch(
       fetchBookedSlots({
@@ -421,7 +430,15 @@ const SalonServiceDetails = () => {
         >
           {booking.error || "¡Operación exitosa!"}
         </Alert>
+
+        
       </Snackbar>
+       {/* ✅ ErrorToast fuera del Snackbar */}
+      <ErrorToast 
+        message={error} 
+        show={showError} 
+        onClose={hideError} 
+      />
     </div>
   );
 };
